@@ -95,4 +95,4 @@ The collection must remain stable during a scan. Enumeration, metadata checks an
 
 The scanner walks the root to enumerate possible anchors, including hidden directories. Pick a suitably narrow root. Required-file bytes are read only for content rules and are not copied into reports. Reports do contain paths, requirement names and operational diagnostics, so inspect a report before sharing it. Collection-to-collection dependencies, remote storage APIs, document parsers and automatic repairs are outside the first release.
 
-Read [CLAUDE.md](CLAUDE.md) for the shared Claude/Codex plan and handoff. Apache 2.0; see LICENSE and NOTICE. The website is a separate final stage.
+Read [CLAUDE.md](CLAUDE.md) for the shared Claude/Codex plan and handoff. Apache 2.0; see LICENSE and NOTICE. Website sources and the recorded report explorer are in [photozeitgeist/ungathered.com](https://github.com/photozeitgeist/ungathered.com).

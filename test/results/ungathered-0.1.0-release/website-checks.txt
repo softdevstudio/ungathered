@@ -1,0 +1,4 @@
+Hugo 0.147.9 build passed. Six unique post images and 635 internal URLs/assets passed. One H1 per substantive page; no sample contamination or em dashes. Launch theme matches every original blob and is omitted from the publishing changes. Independent content and DOM review: no findings. Three demo datasets exactly match recorded reports after omitting only incidental absolute root labels. Dataset switching, stale-response protection and fetch-error behavior passed. SVGs rasterized and inspected.
+Site content commit: cba2d9546acdcbbadfd987ccf861f5be13c82c19
+Studio commit: 6f75c820dc35ad49181c7b191a3ce0b62e56e5a3
+Studio public note and project entry verified. Public ungathered.com could not be verified: upstream connection error on initial visit and one reload.

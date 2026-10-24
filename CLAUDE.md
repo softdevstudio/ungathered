@@ -2,7 +2,7 @@
 
 ## Project facts
 
-UnGathered finds missing companions in local collections. Domain: ungathered.com. Code: softdevstudio/ungathered. Website repository has not been supplied. Go, Apache 2.0.
+UnGathered finds missing companions in local collections. Domain: ungathered.com. Code: softdevstudio/ungathered. Site: photozeitgeist/ungathered.com. Go, Apache 2.0.
 
 ## Low maintenance workflow
 
@@ -30,8 +30,12 @@ Version 1 JSON manifest: named collections select relative glob anchors of kind 
 
 Independent review found noncanonical globs could silently miss anchors when empty selection was permitted. Fixed by rejecting dot segments, repeated separators and trailing slash. Review also found duplicate-key bypasses through case and Unicode field folding; schema keys now require lowercase ASCII, with regression tests. Ancestor symlinks that could hide anchors now error, and scans copy rule slices before validation for concurrent safety. Release archives include examples/docs after a packaging review caught their omission. Final targeted independent review and race tests pass with no remaining findings.
 
-Manufacturing demo: two items, six checks, four present and two gaps (empty drawing, missing inspection). Publishing demo: two items, four checks, two present and two gaps (missing image and credit). Input digests and file inventories remain unchanged during scans. A deliberately repaired fixture has two complete items and six present checks. These are generated placeholder documents, not PDF/image validation. Version 0.1.0 is ready for the initial remote push, Linux/macOS CI and automatic release. Website repo is not supplied.
+Manufacturing demo: two items, six checks, four present and two gaps (empty drawing, missing inspection). Publishing demo: two items, four checks, two present and two gaps (missing image and credit). Input digests and file inventories remain unchanged during scans. A deliberately repaired fixture has two complete items and six present checks. These are generated placeholder documents, not PDF/image validation. UnGathered 0.1.0 is published as a full release. Linux/macOS CI and native Linux amd64, macOS arm64 and Windows amd64 archive smoke checks passed. All five archives at the tag and latest independently matched SHA256SUMS; both manifests matched. Every archive includes examples, reference and license files. A downloaded Linux binary reproduced both gap reports with unchanged input inventories and digests. There is no leftover draft. Verification is in test/results/ungathered-0.1.0-release.
+
+The user already created photozeitgeist/ungathered.com, discovered during the final phase. Its Launch template was kept byte-identical while replacing sample content with five documentation/contact pages, a recorded scan explorer and six illustrated posts, including manufacturing and publishing cases. Hugo 0.147.9 and 635 internal link/asset checks pass. An independent content and DOM review found no mismatch; all three datasets exactly match recorded reports except the disclosed omission of incidental absolute root labels. SVGs were rasterized and inspected. Site commit: cba2d9546acdcbbadfd987ccf861f5be13c82c19.
+
+UnGathered is listed once as the thirtieth SoftDevStudio.com project, with its launch note, name/tag/feed entries and coverage updated. Studio commit: 6f75c820dc35ad49181c7b191a3ce0b62e56e5a3. The note and project entry were verified in the public browser. Public ungathered.com returned an upstream connection error on initial check and one reload; deployment on the domain is not yet verified.
 
 ## Next
 
-Publish the verified first implementation to main, confirm CI and automated release, verify all five tag/latest archives and a downloaded binary, then save release evidence. Website waits for its own repo.
+Verify the public ungathered.com homepage, demo, SVGs and downloads when its host/domain connection is ready. The released code, website repository and studio listing are complete. Further engine features await the user.

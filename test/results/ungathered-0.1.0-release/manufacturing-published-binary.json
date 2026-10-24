@@ -1,0 +1,74 @@
+{
+  "version": 1,
+  "tool_version": "0.1.0",
+  "root": "/tmp/ungathered-release-0.1.0/work/pack",
+  "manifest_sha256": "dcf3efb18f340a2bda6005170d53f8a8dfb228a87405c9ddfa7bacff0ea33b71",
+  "status": "incomplete",
+  "totals": {
+    "items": 2,
+    "complete_items": 1,
+    "checks": 6,
+    "present": 4,
+    "gaps": 2,
+    "errors": 0
+  },
+  "collections": [
+    {
+      "name": "Manufacturing document packs",
+      "pattern": "products/*",
+      "items": [
+        {
+          "path": "products/alpha",
+          "complete": true,
+          "checks": [
+            {
+              "name": "Specification",
+              "path": "products/alpha/specification.pdf",
+              "status": "present",
+              "bytes": 26
+            },
+            {
+              "name": "Drawing",
+              "path": "products/alpha/drawing.pdf",
+              "status": "present",
+              "bytes": 20
+            },
+            {
+              "name": "Inspection record",
+              "path": "products/alpha/inspection.csv",
+              "status": "present",
+              "bytes": 23
+            }
+          ]
+        },
+        {
+          "path": "products/beta",
+          "complete": false,
+          "checks": [
+            {
+              "name": "Specification",
+              "path": "products/beta/specification.pdf",
+              "status": "present",
+              "bytes": 26
+            },
+            {
+              "name": "Drawing",
+              "path": "products/beta/drawing.pdf",
+              "status": "too_small",
+              "bytes": 0,
+              "detail": "need at least 1 bytes"
+            },
+            {
+              "name": "Inspection record",
+              "path": "products/beta/inspection.csv",
+              "status": "missing",
+              "bytes": 0,
+              "detail": "required path does not exist"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "issues": []
+}

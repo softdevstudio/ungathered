@@ -1,0 +1,5 @@
+UnGathered v0.1.0
+Source commit: b827c1849e8a5c1465bf1ed9c979295079be4133
+CI: https://github.com/softdevstudio/ungathered/actions/runs/40074601612
+Release: https://github.com/softdevstudio/ungathered/actions/runs/40074658553
+Linux/macOS CI and native Linux amd64, macOS arm64 and Windows amd64 smoke checks passed. All five tag/latest archives matched SHA256SUMS, and both manifests matched. Examples, reference and license files were checked in all five archives. A separately downloaded Linux amd64 binary reproduced the manufacturing and publishing gap totals. Input inventories and digests were unchanged. Fixtures contain placeholders, not validated PDF or image data.

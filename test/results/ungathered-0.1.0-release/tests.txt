@@ -1,0 +1,31 @@
+?   	github.com/softdevstudio/ungathered	[no test files]
+=== RUN   TestCLI
+--- PASS: TestCLI (0.01s)
+PASS
+ok  	github.com/softdevstudio/ungathered/cmd/ungathered	1.015s
+=== RUN   TestManufacturingGapsAndCompletion
+--- PASS: TestManufacturingGapsAndCompletion (0.00s)
+=== RUN   TestPublishingAndVariables
+--- PASS: TestPublishingAndVariables (0.00s)
+=== RUN   TestEmptyCollectionIsNotCompleteByDefault
+--- PASS: TestEmptyCollectionIsNotCompleteByDefault (0.00s)
+=== RUN   TestWrongTypeAndReadLimit
+--- PASS: TestWrongTypeAndReadLimit (0.00s)
+=== RUN   TestSymlinksNotFollowed
+--- PASS: TestSymlinksNotFollowed (0.00s)
+=== RUN   TestDirectoryRequirementAndMissingParent
+--- PASS: TestDirectoryRequirementAndMissingParent (0.00s)
+=== RUN   TestDeterminismAndNoMutation
+--- PASS: TestDeterminismAndNoMutation (0.00s)
+=== RUN   TestManifestFailures
+--- PASS: TestManifestFailures (0.00s)
+=== RUN   TestReportFormatsAndEscaping
+--- PASS: TestReportFormatsAndEscaping (0.00s)
+=== RUN   TestNoncanonicalAndDuplicateManifestsRejected
+--- PASS: TestNoncanonicalAndDuplicateManifestsRejected (0.00s)
+=== RUN   TestSymlinkCannotHideAnchorDescendants
+--- PASS: TestSymlinkCannotHideAnchorDescendants (0.00s)
+=== RUN   TestConcurrentScansShareReadOnlyManifest
+--- PASS: TestConcurrentScansShareReadOnlyManifest (0.00s)
+PASS
+ok  	github.com/softdevstudio/ungathered/internal/scan	1.027s
