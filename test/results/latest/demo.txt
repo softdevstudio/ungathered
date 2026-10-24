@@ -1,0 +1,2 @@
+Manufacturing: 2 items, 6 checks, 2 gaps. Publishing: 2 items, 4 checks, 2 gaps. Input digests unchanged.
+Repaired manufacturing fixture: 2 complete items, 6 present checks, no gaps.

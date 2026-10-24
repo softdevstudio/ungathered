@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "collections": [
+    {
+      "name": "Manufacturing document packs",
+      "items": "products/*",
+      "kind": "directory",
+      "require": [
+        {"name": "Specification", "path": "{item}/specification.pdf", "min_bytes": 1},
+        {"name": "Drawing", "path": "{item}/drawing.pdf", "min_bytes": 1},
+        {"name": "Inspection record", "path": "{item}/inspection.csv", "min_bytes": 1}
+      ]
+    }
+  ]
+}

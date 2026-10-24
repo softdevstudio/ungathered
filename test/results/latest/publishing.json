@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "tool_version": "0.1.0",
+  "root": "/workspace/scratch/a1e6bf690e2f/ungathered/demo-output/publishing",
+  "manifest_sha256": "544af8855a71dbdd85907c109d31d71f6c74596a138a92e23eea4446818eb8ae",
+  "status": "incomplete",
+  "totals": {
+    "items": 2,
+    "complete_items": 1,
+    "checks": 4,
+    "present": 2,
+    "gaps": 2,
+    "errors": 0
+  },
+  "collections": [
+    {
+      "name": "Article assets",
+      "pattern": "articles/*.md",
+      "items": [
+        {
+          "path": "articles/cafe.md",
+          "complete": true,
+          "checks": [
+            {
+              "name": "Lead image",
+              "path": "images/cafe.jpg",
+              "status": "present",
+              "bytes": 18
+            },
+            {
+              "name": "Photo credit",
+              "path": "articles/cafe.md",
+              "status": "present",
+              "bytes": 37
+            }
+          ]
+        },
+        {
+          "path": "articles/harbor.md",
+          "complete": false,
+          "checks": [
+            {
+              "name": "Lead image",
+              "path": "images/harbor.jpg",
+              "status": "missing",
+              "bytes": 0,
+              "detail": "required path does not exist"
+            },
+            {
+              "name": "Photo credit",
+              "path": "articles/harbor.md",
+              "status": "content_mismatch",
+              "bytes": 35,
+              "detail": "required content pattern did not match"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "issues": []
+}

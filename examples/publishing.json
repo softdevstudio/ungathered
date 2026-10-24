@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "collections": [
+    {
+      "name": "Article assets",
+      "items": "articles/*.md",
+      "kind": "file",
+      "require": [
+        {"name": "Lead image", "path": "images/{stem}.jpg", "min_bytes": 1},
+        {"name": "Photo credit", "path": "{item}", "contains": "(?mi)^Photo credit:[ \\t]*\\S"}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,159 @@
+name: Release
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+permissions:
+  contents: write
+concurrency:
+  group: ungathered-release
+  cancel-in-progress: false
+jobs:
+  check:
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      release: ${{ steps.v.outputs.release }}
+      sha: ${{ github.event.workflow_run.head_sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+      - id: v
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          V=$(sed -n 's/^const Version = "\([0-9][0-9.]*\)"/\1/p' version.go)
+          test -n "$V"
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          if git rev-parse "refs/tags/v$V" >/dev/null 2>&1; then
+            ASSETS=$(gh release view "v$V" --json assets --jq '.assets[].name' | sort)
+            EXPECTED=$(printf '%s\n' SHA256SUMS ungathered-darwin-amd64.tar.gz ungathered-darwin-arm64.tar.gz ungathered-linux-amd64.tar.gz ungathered-linux-arm64.tar.gz ungathered-windows-amd64.zip | sort)
+            if [ "$ASSETS" != "$EXPECTED" ]; then
+              echo 'Existing tag has an incomplete release. Inspect it and follow CLAUDE.md recovery rules.' >&2
+              exit 1
+            fi
+            echo "release=no" >> "$GITHUB_OUTPUT"
+          else
+            echo "release=yes" >> "$GITHUB_OUTPUT"
+          fi
+  build:
+    needs: check
+    if: needs.check.outputs.release == 'yes'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - {goos: linux, goarch: amd64}
+          - {goos: linux, goarch: arm64}
+          - {goos: darwin, goarch: amd64}
+          - {goos: darwin, goarch: arm64}
+          - {goos: windows, goarch: amd64}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.check.outputs.sha }}
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Build archive
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: '0'
+        run: |
+          EXT=''; [ "$GOOS" != windows ] || EXT='.exe'
+          mkdir dist
+          go build -trimpath -ldflags '-s -w' -o "dist/ungathered$EXT" ./cmd/ungathered
+          cp LICENSE NOTICE README.md THIRD_PARTY_LICENSES.md dist/
+          cp -R docs examples dist/
+          cp "$(go env GOROOT)/LICENSE" dist/GO-LICENSE
+          cd dist
+          BASE="ungathered-$GOOS-$GOARCH"
+          if [ "$GOOS" = windows ]; then zip -qr "../$BASE.zip" *; else tar czf "../$BASE.tar.gz" *; fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: archive-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: ungathered-*.tar.gz
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: matrix.goos == 'windows'
+        with:
+          name: archive-windows-zip
+          path: ungathered-windows-amd64.zip
+  smoke:
+    needs: [check, build]
+    strategy:
+      matrix:
+        include:
+          - {os: ubuntu-latest, archive: linux-amd64.tar.gz}
+          - {os: macos-latest, archive: darwin-arm64.tar.gz}
+          - {os: windows-latest, archive: windows-amd64.zip}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: archive-*
+          merge-multiple: true
+      - shell: bash
+        env:
+          VERSION: ${{ needs.check.outputs.version }}
+        run: |
+          F="ungathered-${{ matrix.archive }}"
+          mkdir unpack
+          cd unpack
+          case "$F" in *.zip) unzip -q "../$F";; *) tar xzf "../$F";; esac
+          ./ungathered --version | grep -F "UnGathered $VERSION"
+          test -f examples/manufacturing.json
+          test -f examples/publishing.json
+          test -f docs/reports.md
+          mkdir -p pack/products/alpha
+          printf 'specification' > pack/products/alpha/spec.txt
+          printf '%s\n' '{"version":1,"collections":[{"name":"products","items":"products/*","kind":"directory","require":[{"name":"spec","path":"{item}/spec.txt","min_bytes":1},{"name":"drawing","path":"{item}/drawing.txt","min_bytes":1}]}]}' > manifest.json
+          if ./ungathered --manifest manifest.json --root pack --format json > incomplete.json; then
+            echo 'Missing drawing should fail' >&2; exit 1
+          else
+            test "$?" -eq 1
+          fi
+          grep -q '"status": "incomplete"' incomplete.json
+          printf 'drawing' > pack/products/alpha/drawing.txt
+          ./ungathered --manifest manifest.json --root pack --format json > complete.json
+          grep -q '"status": "complete"' complete.json
+
+  publish:
+    needs: [check, build, smoke]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.check.outputs.sha }}
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: archive-*
+          merge-multiple: true
+          path: out
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.check.outputs.version }}
+          SOURCE_SHA: ${{ needs.check.outputs.sha }}
+        run: |
+          test "$(find out -type f | wc -l)" -eq 5
+          (cd out && sha256sum ungathered-* > SHA256SUMS)
+          gh release create "v$VERSION" out/* --target "$SOURCE_SHA" --title "UnGathered v$VERSION" --generate-notes
+      - name: Verify published tag and latest
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.check.outputs.version }}
+        run: |
+          gh release download "v$VERSION" --dir verify-tag
+          gh release download --pattern '*' --dir verify-latest
+          (cd verify-tag && sha256sum -c SHA256SUMS)
+          (cd verify-latest && sha256sum -c SHA256SUMS)
+          cmp verify-tag/SHA256SUMS verify-latest/SHA256SUMS
+          mkdir downloaded
+          tar xzf verify-tag/ungathered-linux-amd64.tar.gz -C downloaded
+          ./downloaded/ungathered --version | grep -F "UnGathered $VERSION"
