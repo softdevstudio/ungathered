@@ -1,0 +1,5 @@
+UnGathered 0.2.0: incomplete. 4 items, 2 complete. 8 checks: 6 present, 4 gaps, 0 errors.
+::error title=UnGathered missing_item::Issue articles: ferry (listed in roster magazine-plan.csv; no selected item matches its stem)
+::error title=UnGathered unlisted_item::Issue articles: issues/summer/bonus.md (selected item is not in roster magazine-plan.csv)
+::error title=UnGathered missing::Issue articles / issues/spring/features/harbor.md / Lead image: issues/spring/features/images/harbor.jpg (required path does not exist)
+::error title=UnGathered content_mismatch::Issue articles / issues/summer/market.md / Photo credit: issues/summer/market.md (required content pattern did not match)

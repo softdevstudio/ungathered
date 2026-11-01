@@ -1,0 +1,72 @@
+?   	github.com/softdevstudio/ungathered	[no test files]
+=== RUN   TestCLI
+--- PASS: TestCLI (0.01s)
+=== RUN   TestReportFilesSummaryAndRoster
+--- PASS: TestReportFilesSummaryAndRoster (0.01s)
+=== RUN   TestReportFoldersMadeAfterCheck
+--- PASS: TestReportFoldersMadeAfterCheck (0.01s)
+=== RUN   TestReportRefusedThroughOtherCapitalisation
+    main_test.go:147: case-sensitive file system
+--- SKIP: TestReportRefusedThroughOtherCapitalisation (0.00s)
+PASS
+ok  	github.com/softdevstudio/ungathered/cmd/ungathered	1.042s
+=== RUN   TestMatchGlob
+--- PASS: TestMatchGlob (0.00s)
+=== RUN   TestGlobDescend
+--- PASS: TestGlobDescend (0.00s)
+=== RUN   TestInvalidGlobs
+--- PASS: TestInvalidGlobs (0.00s)
+=== RUN   TestRecursiveAnchorsAndExcludes
+--- PASS: TestRecursiveAnchorsAndExcludes (0.00s)
+=== RUN   TestDirectoryAnchorsAtAnyDepth
+--- PASS: TestDirectoryAnchorsAtAnyDepth (0.00s)
+=== RUN   TestSymlinksWithRecursiveGlobs
+--- PASS: TestSymlinksWithRecursiveGlobs (0.00s)
+=== RUN   TestExcludeEverythingIsBelowMinimum
+--- PASS: TestExcludeEverythingIsBelowMinimum (0.00s)
+=== RUN   TestGitHubAnnotations
+--- PASS: TestGitHubAnnotations (0.00s)
+=== RUN   TestMarkdownSummary
+--- PASS: TestMarkdownSummary (0.01s)
+=== RUN   TestTextAndHTMLShowRoster
+--- PASS: TestTextAndHTMLShowRoster (0.00s)
+=== RUN   TestTextFormatCannotStartALogCommand
+--- PASS: TestTextFormatCannotStartALogCommand (0.00s)
+=== RUN   TestMarkdownStaysSmall
+--- PASS: TestMarkdownStaysSmall (0.11s)
+=== RUN   TestRosterTextFindsMissingItems
+--- PASS: TestRosterTextFindsMissingItems (0.00s)
+=== RUN   TestRosterCSVAndMatchKeys
+--- PASS: TestRosterCSVAndMatchKeys (0.00s)
+=== RUN   TestRosterFailuresAreInvalidInput
+--- PASS: TestRosterFailuresAreInvalidInput (0.01s)
+=== RUN   TestRosterLimits
+--- PASS: TestRosterLimits (0.70s)
+=== RUN   TestEmptyRosterAndLongEntry
+--- PASS: TestEmptyRosterAndLongEntry (0.00s)
+=== RUN   TestManufacturingGapsAndCompletion
+--- PASS: TestManufacturingGapsAndCompletion (0.00s)
+=== RUN   TestPublishingAndVariables
+--- PASS: TestPublishingAndVariables (0.00s)
+=== RUN   TestEmptyCollectionIsNotCompleteByDefault
+--- PASS: TestEmptyCollectionIsNotCompleteByDefault (0.00s)
+=== RUN   TestWrongTypeAndReadLimit
+--- PASS: TestWrongTypeAndReadLimit (0.00s)
+=== RUN   TestSymlinksNotFollowed
+--- PASS: TestSymlinksNotFollowed (0.00s)
+=== RUN   TestDirectoryRequirementAndMissingParent
+--- PASS: TestDirectoryRequirementAndMissingParent (0.00s)
+=== RUN   TestDeterminismAndNoMutation
+--- PASS: TestDeterminismAndNoMutation (0.00s)
+=== RUN   TestManifestFailures
+--- PASS: TestManifestFailures (0.00s)
+=== RUN   TestReportFormatsAndEscaping
+--- PASS: TestReportFormatsAndEscaping (0.00s)
+=== RUN   TestNoncanonicalAndDuplicateManifestsRejected
+--- PASS: TestNoncanonicalAndDuplicateManifestsRejected (0.00s)
+=== RUN   TestSymlinkCannotHideAnchorDescendants
+--- PASS: TestSymlinkCannotHideAnchorDescendants (0.00s)
+=== RUN   TestConcurrentScansShareReadOnlyManifest
+--- PASS: TestConcurrentScansShareReadOnlyManifest (0.00s)
+PASS
+ok  	github.com/softdevstudio/ungathered/internal/scan	1.899s

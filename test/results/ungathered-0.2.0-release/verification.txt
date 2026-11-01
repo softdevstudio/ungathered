@@ -1,0 +1,31 @@
+UnGathered 0.2.0 release verification, 2026-11-01
+
+Release: https://github.com/softdevstudio/ungathered/releases/tag/v0.2.0
+Title "UnGathered v0.2.0", full release (not a draft or pre-release), commit fe27539.
+Published by the automated release workflow (run 41284104349) after green CI (run 41284035531:
+Linux and macOS with the race detector, Windows without) and the Action test on Linux, macOS and
+Windows with a binary built from the commit (run 41284035397).
+
+Assets: SHA256SUMS and five archives (linux amd64/arm64, darwin amd64/arm64, windows amd64).
+Downloaded separately from releases/download/v0.2.0 and releases/latest/download: all five archives
+match SHA256SUMS at both, and the two SHA256SUMS files are identical.
+
+Downloaded linux-amd64 binary, run in this session:
+- ungathered --version prints "UnGathered 0.2.0"; the archive holds docs/action.md, examples/magazine.json
+  and examples/magazine-plan.csv.
+- examples/magazine.json on a generated nested magazine (two issues, a drafts folder, a README):
+  exit 1, 4 items, 2 complete, 8 checks, 6 present, 4 gaps, 0 errors; drafts and README excluded;
+  roster 4 entries, 3 found, 1 missing (ferry), 1 unlisted (issues/summer/bonus.md). Matches the demo.
+- One run wrote GitHub annotations to stdout, --json and --html into a folder that did not exist yet
+  (made after the scan), and appended the Markdown summary to an existing file.
+- SHA-256 digests of every input file were identical before and after the scan.
+- --json pointing inside the scanned root: exit 2, "report files must be outside the collection root",
+  nothing written.
+
+Local test results in this folder were recorded with Go 1.24.7 (the cloud session could not download
+newer Go); CI ran the same suite on current stable Go.
+
+Action on the published binaries (Action test run 41284175761, started by the release): the fresh
+gate matched the new release to its commit, and the download job passed on ubuntu, macos and windows
+runners, each pinned to v0.2.0 and unpinned (latest): SHA256SUMS check in the action, gaps exit 1 on
+the incomplete fixture, exit 0 on the complete one, binary version 0.2.0.
