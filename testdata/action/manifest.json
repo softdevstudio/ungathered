@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "collections": [
+    {
+      "name": "Articles",
+      "items": "articles/**/*.md",
+      "kind": "file",
+      "exclude": ["articles/drafts/**"],
+      "roster": {"file": "articles.txt", "match": "stem"},
+      "require": [
+        {"name": "Image", "path": "images/{stem}.png", "min_bytes": 1},
+        {"name": "Credit", "path": "{item}", "contains": "(?m)^Photo credit: .+"}
+      ]
+    }
+  ]
+}

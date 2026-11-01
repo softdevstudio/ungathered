@@ -1,0 +1,198 @@
+name: Action test
+
+# Runs the GitHub Action in this repo (action.yml) with an ungathered built
+# from this commit, on fixtures that must pass and fail. The download job
+# runs the action on the published binaries, pinned to the newest tag and
+# unpinned; it starts by itself after each release and can be started by hand.
+on:
+  push:
+    branches: [main]
+    paths: [action.yml, .github/workflows/action-test.yml, "cmd/**", "internal/**", "*.go", go.mod, "testdata/action/**"]
+  pull_request:
+    paths: [action.yml, .github/workflows/action-test.yml, "cmd/**", "internal/**", "*.go", go.mod, "testdata/action/**"]
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag the download job pins (vX.Y.Z); empty means the newest release
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  local:
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - name: Build ungathered
+        shell: bash
+        run: |
+          ext=""; [ "$RUNNER_OS" = Windows ] && ext=.exe
+          go build -o "$RUNNER_TEMP/ungathered$ext" ./cmd/ungathered
+          echo "UG_BIN=$RUNNER_TEMP/ungathered$ext" >> "$GITHUB_ENV"
+
+      - name: A complete collection passes
+        id: complete
+        uses: ./
+        with:
+          manifest: testdata/action/manifest.json
+          root: testdata/action/complete
+          artifact-name: complete-${{ matrix.os }}
+          ungathered-path: ${{ env.UG_BIN }}
+      - name: Gaps are reported with fail off
+        id: gaps
+        uses: ./
+        with:
+          manifest: testdata/action/manifest.json
+          root: testdata/action/incomplete
+          fail: "false"
+          artifact-name: incomplete-${{ matrix.os }}
+          ungathered-path: ${{ env.UG_BIN }}
+      - name: Gaps fail the step with fail left on
+        id: gapsfail
+        continue-on-error: true
+        uses: ./
+        with:
+          manifest: testdata/action/manifest.json
+          root: testdata/action/incomplete
+          upload: "false"
+          ungathered-path: ${{ env.UG_BIN }}
+      - name: A missing manifest fails even with fail off
+        id: bad
+        continue-on-error: true
+        uses: ./
+        with:
+          manifest: testdata/action/absent.json
+          root: testdata/action/complete
+          fail: "false"
+          upload: "false"
+          ungathered-path: ${{ env.UG_BIN }}
+      - name: A report folder inside the scanned root is refused
+        id: inside
+        continue-on-error: true
+        uses: ./
+        with:
+          manifest: testdata/action/manifest.json
+          root: testdata/action/complete
+          out: testdata/action/complete/report
+          upload: "false"
+          ungathered-path: ${{ env.UG_BIN }}
+
+      - name: Check the results
+        shell: bash
+        env:
+          GAPS_REPORT: ${{ steps.gaps.outputs.report }}
+        run: |
+          set -u
+          bad=0
+          want() { if [ "$2" != "$3" ]; then echo "::error::$1: got $2, want $3"; bad=1; fi; }
+          want "complete result" "${{ steps.complete.outputs.result }}" pass
+          want "complete exit" "${{ steps.complete.outputs.exit-code }}" 0
+          want "complete version" "${{ steps.complete.outputs.version }}" local
+          want "gaps result" "${{ steps.gaps.outputs.result }}" fail
+          want "gaps exit" "${{ steps.gaps.outputs.exit-code }}" 1
+          want "gaps with fail on" "${{ steps.gapsfail.outcome }}" failure
+          want "missing manifest" "${{ steps.bad.outcome }}" failure
+          want "missing manifest exit" "${{ steps.bad.outputs.exit-code }}" 2
+          want "report inside root" "${{ steps.inside.outcome }}" failure
+          want "report inside root exit" "${{ steps.inside.outputs.exit-code }}" 2
+          r="$GAPS_REPORT/ungathered.json"
+          [ -s "$r" ] || { echo "::error::no JSON report at $r"; bad=1; }
+          [ -s "$GAPS_REPORT/ungathered.html" ] || { echo "::error::no HTML report"; bad=1; }
+          grep -q '"status": "incomplete"' "$r" || { echo "::error::report is not incomplete"; bad=1; }
+          grep -q '"missing_item"' "$r" || { echo "::error::report has no missing_item"; bad=1; }
+          grep -q '"content_mismatch"' "$r" || { echo "::error::report has no content_mismatch"; bad=1; }
+          grep -q '"gaps": 3' "$r" || { echo "::error::report does not have 3 gaps"; bad=1; }
+          if grep -q 'drafts' "$r"; then echo "::error::the excluded draft was scanned"; bad=1; fi
+          [ ! -e testdata/action/complete/report ] || { echo "::error::a report was written inside the root"; bad=1; }
+          exit $bad
+
+  # The Release workflow runs after every green CI on main but publishes only
+  # when the version is new. Go on only when the newest release was made from
+  # the commit that run was for, so a push without a release costs nothing.
+  fresh:
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-latest
+    outputs:
+      go: ${{ steps.f.outputs.go }}
+    steps:
+      - id: f
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT" = workflow_dispatch ]; then echo "go=yes" >> "$GITHUB_OUTPUT"; exit 0; fi
+          tag=$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName)
+          sha=$(gh api "repos/$GITHUB_REPOSITORY/commits/$tag" --jq .sha)
+          if [ "$sha" = "$HEAD_SHA" ]; then echo "go=yes" >> "$GITHUB_OUTPUT"; else echo "go=no" >> "$GITHUB_OUTPUT"; echo "No new release for $HEAD_SHA (newest is $tag)"; fi
+
+  # Runs the published binaries through the action: pinned to a tag and
+  # latest. Starts after each release, or by hand.
+  download:
+    needs: fresh
+    if: needs.fresh.outputs.go == 'yes'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        pin: [tag, latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pick the version
+        id: pick
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.inputs.tag }}
+        run: |
+          set -euo pipefail
+          if [ -z "${TAG:-}" ]; then TAG=$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName); fi
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::bad tag $TAG"; exit 1; }
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          if [ "${{ matrix.pin }}" = tag ]; then echo "version=$TAG" >> "$GITHUB_OUTPUT"; else echo "version=latest" >> "$GITHUB_OUTPUT"; fi
+      - name: Gaps through the published binary
+        id: gaps
+        uses: ./
+        with:
+          manifest: testdata/action/manifest.json
+          root: testdata/action/incomplete
+          fail: "false"
+          upload: "false"
+          version: ${{ steps.pick.outputs.version }}
+      - name: Complete through the published binary
+        id: complete
+        uses: ./
+        with:
+          manifest: testdata/action/manifest.json
+          root: testdata/action/complete
+          upload: "false"
+          version: ${{ steps.pick.outputs.version }}
+      - name: Check
+        shell: bash
+        env:
+          TAG: ${{ steps.pick.outputs.tag }}
+        run: |
+          set -u
+          bad=0
+          want() { if [ "$2" != "$3" ]; then echo "::error::$1: got $2, want $3"; bad=1; fi; }
+          want "gaps exit" "${{ steps.gaps.outputs.exit-code }}" 1
+          want "complete exit" "${{ steps.complete.outputs.exit-code }}" 0
+          want "version" "${{ steps.gaps.outputs.version }}" "${{ steps.pick.outputs.version }}"
+          ext=""; [ "$RUNNER_OS" = Windows ] && ext=.exe
+          "$RUNNER_TEMP/ungathered-bin/ungathered$ext" --version | grep -F "UnGathered ${TAG#v}" || { echo "::error::binary is not $TAG"; bad=1; }
+          exit $bad
