@@ -14,7 +14,12 @@ import (
 	"github.com/softdevstudio/ungathered"
 )
 
-type Options struct{ MaxContentBytes int64 }
+type Options struct {
+	MaxContentBytes int64
+	// RosterDir is the folder relative roster files are read from, normally
+	// the manifest's folder.
+	RosterDir string
+}
 type Check struct {
 	Name   string `json:"name"`
 	Path   string `json:"path"`
@@ -28,9 +33,12 @@ type Item struct {
 	Checks   []Check `json:"checks"`
 }
 type Group struct {
-	Name    string `json:"name"`
-	Pattern string `json:"pattern"`
-	Items   []Item `json:"items"`
+	Name    string        `json:"name"`
+	Pattern string        `json:"pattern"`
+	Kind    string        `json:"kind"`
+	Exclude []string      `json:"exclude,omitempty"`
+	Roster  *RosterResult `json:"roster,omitempty"`
+	Items   []Item        `json:"items"`
 }
 type Issue struct {
 	Collection string `json:"collection,omitempty"`
@@ -65,6 +73,11 @@ func Scan(root string, m Manifest, opts Options) (Report, error) {
 	m.Collections = append([]Collection(nil), m.Collections...)
 	for i := range m.Collections {
 		m.Collections[i].Require = append([]Requirement(nil), m.Collections[i].Require...)
+		m.Collections[i].Exclude = append([]string(nil), m.Collections[i].Exclude...)
+		if r := m.Collections[i].Roster; r != nil {
+			copied := *r
+			m.Collections[i].Roster = &copied
+		}
 	}
 	if err := m.validate(); err != nil {
 		return Report{}, err
@@ -86,6 +99,14 @@ func Scan(root string, m Manifest, opts Options) (Report, error) {
 	root, err = filepath.EvalSymlinks(root)
 	if err != nil {
 		return Report{}, err
+	}
+	rosters := make([]rosterList, len(m.Collections))
+	for i, c := range m.Collections {
+		if c.Roster != nil {
+			if rosters[i], err = loadRoster(*c.Roster, opts.RosterDir); err != nil {
+				return Report{}, err
+			}
+		}
 	}
 	report := Report{Version: 1, ToolVersion: ungathered.Version, Root: root, ManifestSHA256: m.hash, Status: "complete", Collections: []Group{}, Issues: []Issue{}}
 	var nodes []node
@@ -112,15 +133,16 @@ func Scan(root string, m Manifest, opts Options) (Report, error) {
 		return nil
 	})
 	sort.Slice(nodes, func(i, j int) bool { return nodes[i].name < nodes[j].name })
-	for _, c := range m.Collections {
-		group := Group{Name: c.Name, Pattern: c.Items, Items: []Item{}}
+	for ci, c := range m.Collections {
+		group := Group{Name: c.Name, Pattern: c.Items, Kind: c.Kind, Exclude: c.Exclude, Items: []Item{}}
 		for _, n := range nodes {
-			if n.mode&os.ModeSymlink != 0 && anchorCanReach(c.Items, n.name) {
-				report.Issues = append(report.Issues, Issue{Collection: c.Name, Path: n.name, Status: "unsafe_symlink", Detail: "anchor pattern reaches a symlink; it was not followed"})
+			if n.mode&os.ModeSymlink != 0 {
+				if symlinkCanHide(c, n.name) {
+					report.Issues = append(report.Issues, Issue{Collection: c.Name, Path: n.name, Status: "unsafe_symlink", Detail: "anchor pattern reaches a symlink; it was not followed"})
+				}
 				continue
 			}
-			match, _ := path.Match(c.Items, n.name)
-			if !match {
+			if !matchGlob(c.Items, n.name) || excluded(c, n.name) {
 				continue
 			}
 
@@ -157,6 +179,9 @@ func Scan(root string, m Manifest, opts Options) (Report, error) {
 			}
 			group.Items = append(group.Items, item)
 		}
+		if c.Roster != nil {
+			report.Issues = append(report.Issues, compareRoster(c, rosters[ci], &group)...)
+		}
 		min := 1
 		if c.MinItems != nil {
 			min = *c.MinItems
@@ -167,7 +192,7 @@ func Scan(root string, m Manifest, opts Options) (Report, error) {
 		report.Collections = append(report.Collections, group)
 	}
 	for _, i := range report.Issues {
-		if i.Status == "below_minimum" {
+		if declaredGap(i.Status) {
 			report.Totals.Gaps++
 		} else {
 			report.Totals.Errors++
@@ -179,6 +204,62 @@ func Scan(root string, m Manifest, opts Options) (Report, error) {
 		report.Status = "incomplete"
 	}
 	return report, nil
+}
+func declaredGap(s string) bool {
+	return s == "below_minimum" || s == "missing_item" || s == "unlisted_item"
+}
+func excluded(c Collection, name string) bool {
+	for _, x := range c.Exclude {
+		if matchGlob(x, name) {
+			return true
+		}
+	}
+	return false
+}
+
+// symlinkCanHide reports whether a symlink that is never followed could be,
+// or could stand in for a folder holding, an anchor this collection counts.
+func symlinkCanHide(c Collection, name string) bool {
+	if matchGlob(c.Items, name) && !excluded(c, name) {
+		return true
+	}
+	if !globCanDescend(c.Items, name) {
+		return false
+	}
+	for _, x := range c.Exclude {
+		if globCoversDescendants(x, name) {
+			return false
+		}
+	}
+	return true
+}
+
+func compareRoster(c Collection, list rosterList, g *Group) []Issue {
+	res := &RosterResult{File: c.Roster.File, SHA256: list.sha256, Match: c.Roster.Match, Entries: len(list.entries)}
+	g.Roster = res
+	listed := make(map[string]bool, len(list.entries))
+	for _, e := range list.entries {
+		listed[e] = true
+	}
+	found := map[string]bool{}
+	var issues, unlisted []Issue
+	for _, it := range g.Items {
+		k := rosterKey(it.Path, c.Roster.Match)
+		if listed[k] {
+			found[k] = true
+		} else if c.Roster.Unlisted == "gap" {
+			unlisted = append(unlisted, Issue{Collection: c.Name, Path: it.Path, Status: "unlisted_item", Detail: fmt.Sprintf("selected item is not in roster %s", c.Roster.File)})
+		}
+	}
+	for _, e := range list.entries {
+		if !found[e] {
+			issues = append(issues, Issue{Collection: c.Name, Path: e, Status: "missing_item", Detail: fmt.Sprintf("listed in roster %s; no selected item matches its %s", c.Roster.File, c.Roster.Match)})
+		}
+	}
+	res.Found = len(found)
+	res.Missing = len(issues)
+	res.Unlisted = len(unlisted)
+	return append(issues, unlisted...)
 }
 func operational(s string) bool {
 	return s == "unreadable" || s == "unsafe_symlink" || s == "unsafe_path" || s == "content_too_large"
@@ -273,18 +354,4 @@ func checkPath(root string, c Check, r Requirement, opts Options) Check {
 	}
 	c.Status = "present"
 	return c
-}
-
-func anchorCanReach(pattern, name string) bool {
-	p, n := strings.Split(pattern, "/"), strings.Split(name, "/")
-	if len(n) > len(p) {
-		return false
-	}
-	for i, part := range n {
-		ok, _ := path.Match(p[i], part)
-		if !ok {
-			return false
-		}
-	}
-	return true
 }

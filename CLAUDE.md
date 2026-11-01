@@ -9,24 +9,26 @@ Read "In progress" below and continue from the first step not marked done. The w
 What and why: three features that close the biggest gaps the 0.1 README admits. Nested asset trees need one collection per depth today; a whole item that was never created can't be seen; content and docs repos have no ready CI gate.
 
 Design decisions:
-- `**` is allowed only as a whole path segment in `items` and in a new `exclude` list. It matches zero or more segments. `a**b` and `**.md` stay invalid.
-- `exclude` (optional, up to 100 globs) removes anchors after matching. Excludes never remove companions; they only remove anchors. A symlink is safe to skip only when it sits under an exclude whose last segment is `**` (then nothing below it can be an anchor); otherwise it stays an error, as in 0.1.
-- `roster` (optional per collection): `{"file": ..., "match": "name|stem|item", "column": ..., "unlisted": "ignore|gap"}`. The file path is relative to the manifest file (absolute allowed), never to the scanned root. `.csv` files need `column` and read that header's column; other files are one entry per line, blank lines and `#` comments ignored. Entries are trimmed, exact and case-sensitive. A roster entry no selected item matches is a `missing_item` gap; with `unlisted: gap` an item absent from the roster is an `unlisted_item` gap. Duplicate or empty entries, a `/` in a name or stem entry, or an unreadable roster are invalid input (exit 2). Limits: 16 MiB and 100000 entries per roster. Reports gain a `roster` block per collection (file, sha256, entries, missing).
+- `**` is allowed only as a whole path segment in `items` and in a new `exclude` list. As in .gitignore it matches zero or more segments, except at the end of a pattern, where it matches one or more (`drafts/**` is everything inside drafts, not drafts itself). `a**b`, `**.md` and `**/**` stay invalid.
+- `exclude` (optional, up to 100 globs) removes anchors after matching. Excludes never remove companions; they only remove anchors. A symlink is skipped silently only when it can't be a counted anchor itself and an exclude ending in `**` covers everything below it; otherwise it stays an error, as in 0.1.
+- `roster` (optional per collection): `{"file": ..., "match": "name|stem|item", "column": ..., "unlisted": "ignore|gap"}`. The file path is relative to the manifest file (absolute allowed), never to the scanned root. `.csv` files need `column` and read that header's column; other files are one entry per line, blank lines and `#` comments ignored. Entries are trimmed, exact and case-sensitive. A roster entry no selected item matches is a `missing_item` gap; with `unlisted: gap` an item absent from the roster is an `unlisted_item` gap. Duplicate or empty entries, a `/` in a name or stem entry, or an unreadable roster are invalid input (exit 2). Limits: 16 MiB and 100000 entries per roster. Reports gain a `roster` block per collection (file, sha256, match, entries, found, missing, unlisted), plus `kind` and `exclude` per collection. The library takes the roster folder as `Options.RosterDir`; the CLI passes the manifest's folder.
 - Report schema stays version 1: the new fields are additive.
-- Output formats `github` (annotations from fixed fields only) and `markdown` (step summary) for the Action. A `--summary FILE` flag appends Markdown to an existing file, so one run can do both.
+- Output formats `github` (annotations from fixed fields only) and `markdown` (step summary) for the Action. `--json FILE` and `--html FILE` write extra reports (new files outside the root, like `--output`) and `--summary FILE` appends Markdown to an existing file outside the root, so one Action run does annotations, summary and both reports. All targets are checked before any is written; a failure removes the files that run created.
 - Action: composite `action.yml` per the PXTA ACTION.md pattern, tested by `.github/workflows/action-test.yml` on Linux, macOS and Windows with a binary built from the commit, plus a download job that runs after each release on the published binaries, pinned and latest.
 - Upkeep: `go.mod` and README minimum Go 1.26; workflows use the current stable Go; a Windows CI job; CLAUDE.md restructured with this section first.
 
 Steps (done / remaining):
-1. [ ] Upkeep: go.mod 1.26, workflows on stable Go, Windows CI job.
-2. [ ] `**` globs and `exclude`, with tests (nesting, zero-depth, excludes, symlinks under excluded and non-excluded trees, invalid patterns).
-3. [ ] Roster files, with tests (text and CSV, each match key, missing and unlisted items, duplicates, bad rows, size limits, BOM, CRLF).
-4. [ ] `--format github|markdown` and `--summary`, with tests.
+1. [x] Upkeep: go.mod 1.26, workflows on stable Go, Windows CI job.
+2. [x] `**` globs and `exclude`, with tests (nesting, zero-depth, excludes, symlinks under excluded and non-excluded trees, invalid patterns).
+3. [x] Roster files, with tests (text and CSV, each match key, missing and unlisted items, duplicates, bad rows, size limits, BOM, CRLF).
+4. [x] `--format github|markdown` and `--summary`, with tests.
 5. [ ] `action.yml`, ACTION.md, action-test workflow.
 6. [ ] README, docs/reports.md, examples (a nested-assets example with a roster), demo script assertions.
 7. [ ] Independent review agent, fixes, fresh test/results.
 8. [ ] Version 0.2.0 on main, release workflow, SHA256SUMS, run the downloaded binary, action-test download job.
 9. [ ] ungathered.com post and pages, softdevstudio.com note, softdev-plan.md status.
+
+Done so far (2026-11-01): steps 1 to 4, with tests in glob_test.go, roster_test.go, render_test.go and main_test.go; all pass locally with -race. A file name with a colon still makes its companion paths unsafe_path (0.1 behaviour, kept for Windows drive safety).
 
 Local note: this cloud session has Go 1.24 only (the Go download hosts are blocked), so local tests run on a scratch go.mod; GitHub CI on stable Go is the real check.
 

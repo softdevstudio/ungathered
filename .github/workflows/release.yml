@@ -58,7 +58,7 @@ jobs:
           ref: ${{ needs.check.outputs.sha }}
       - uses: actions/setup-go@v5
         with:
-          go-version-file: go.mod
+          go-version: stable
       - name: Build archive
         env:
           GOOS: ${{ matrix.goos }}

@@ -23,8 +23,20 @@ type Collection struct {
 	Name     string        `json:"name"`
 	Items    string        `json:"items"`
 	Kind     string        `json:"kind"`
+	Exclude  []string      `json:"exclude,omitempty"`
 	MinItems *int          `json:"min_items,omitempty"`
+	Roster   *Roster       `json:"roster,omitempty"`
 	Require  []Requirement `json:"require"`
+}
+
+// Roster names a list of items that must exist, kept outside the scanned
+// collection (a product export, an issue plan). File is relative to the
+// manifest's folder unless absolute.
+type Roster struct {
+	File     string `json:"file"`
+	Match    string `json:"match,omitempty"`
+	Column   string `json:"column,omitempty"`
+	Unlisted string `json:"unlisted,omitempty"`
 }
 type Requirement struct {
 	Name       string `json:"name"`
@@ -80,17 +92,21 @@ func (m *Manifest) validate() error {
 		if c.Kind != "file" && c.Kind != "directory" {
 			return fmt.Errorf("collection %s kind must be file or directory", c.Name)
 		}
-		if path.Clean(c.Items) != c.Items || c.Items == "." {
-			return fmt.Errorf("collection %s items must use a canonical relative glob without ./, repeated separators or trailing slash", c.Name)
-		}
-		if err := relative(c.Items); err != nil {
+		if err := validGlob(c.Items); err != nil {
 			return fmt.Errorf("collection %s items: %w", c.Name, err)
 		}
-		if strings.Contains(c.Items, "**") {
-			return fmt.Errorf("recursive ** globs are unsupported")
+		if len(c.Exclude) > 100 {
+			return fmt.Errorf("collection %s has more than 100 exclude patterns", c.Name)
 		}
-		if _, err := path.Match(c.Items, "probe"); err != nil {
-			return fmt.Errorf("collection %s glob: %w", c.Name, err)
+		for _, x := range c.Exclude {
+			if err := validGlob(x); err != nil {
+				return fmt.Errorf("collection %s exclude %q: %w", c.Name, x, err)
+			}
+		}
+		if c.Roster != nil {
+			if err := c.Roster.validate(); err != nil {
+				return fmt.Errorf("collection %s roster: %w", c.Name, err)
+			}
 		}
 		if c.MinItems != nil && *c.MinItems < 0 {
 			return fmt.Errorf("min_items must be nonnegative")
@@ -136,6 +152,34 @@ func (m *Manifest) validate() error {
 				}
 			}
 		}
+	}
+	return nil
+}
+func (r *Roster) validate() error {
+	if strings.TrimSpace(r.File) == "" || strings.ContainsRune(r.File, 0) {
+		return fmt.Errorf("file is required")
+	}
+	if r.Match == "" {
+		r.Match = "name"
+	}
+	if r.Match != "name" && r.Match != "stem" && r.Match != "item" {
+		return fmt.Errorf("match must be name, stem or item")
+	}
+	if r.Unlisted == "" {
+		r.Unlisted = "ignore"
+	}
+	if r.Unlisted != "ignore" && r.Unlisted != "gap" {
+		return fmt.Errorf("unlisted must be ignore or gap")
+	}
+	csv := strings.EqualFold(path.Ext(strings.ReplaceAll(r.File, "\\", "/")), ".csv")
+	if csv && strings.TrimSpace(r.Column) == "" {
+		return fmt.Errorf("a .csv roster needs column, the header of the column holding item names")
+	}
+	if !csv && r.Column != "" {
+		return fmt.Errorf("column applies only to .csv rosters")
+	}
+	if len(r.Column) > 256 {
+		return fmt.Errorf("column exceeds 256 bytes")
 	}
 	return nil
 }
