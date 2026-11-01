@@ -79,6 +79,16 @@ jobs:
           fail: "false"
           upload: "false"
           ungathered-path: ${{ env.UG_BIN }}
+      - name: A fail value other than true or false is refused
+        id: badfail
+        continue-on-error: true
+        uses: ./
+        with:
+          manifest: testdata/action/manifest.json
+          root: testdata/action/incomplete
+          fail: "yes"
+          upload: "false"
+          ungathered-path: ${{ env.UG_BIN }}
       - name: A report folder inside the scanned root is refused
         id: inside
         continue-on-error: true
@@ -108,6 +118,8 @@ jobs:
           want "missing manifest exit" "${{ steps.bad.outputs.exit-code }}" 2
           want "report inside root" "${{ steps.inside.outcome }}" failure
           want "report inside root exit" "${{ steps.inside.outputs.exit-code }}" 2
+          want "fail: yes" "${{ steps.badfail.outcome }}" failure
+          want "fail: yes exit" "${{ steps.badfail.outputs.exit-code }}" 2
           r="$GAPS_REPORT/ungathered.json"
           [ -s "$r" ] || { echo "::error::no JSON report at $r"; bad=1; }
           [ -s "$GAPS_REPORT/ungathered.html" ] || { echo "::error::no HTML report"; bad=1; }
@@ -152,7 +164,10 @@ jobs:
         pin: [tag, latest]
     runs-on: ${{ matrix.os }}
     steps:
+      # The action as released, not whatever main holds now.
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - name: Pick the version
         id: pick
         shell: bash

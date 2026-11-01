@@ -17,8 +17,9 @@ import (
 )
 
 const (
-	MaxRosterBytes   = 16 << 20
-	MaxRosterEntries = 100000
+	MaxRosterBytes      = 16 << 20
+	MaxRosterEntries    = 100000
+	MaxRosterEntryBytes = 4096
 )
 
 type rosterList struct {
@@ -88,6 +89,9 @@ func parseRoster(data []byte, r Roster) (rosterList, error) {
 		if v == "" {
 			return fmt.Errorf("line %d: empty entry", line)
 		}
+		if len(v) > MaxRosterEntryBytes {
+			return fmt.Errorf("line %d: entry exceeds %d bytes", line, MaxRosterEntryBytes)
+		}
 		if err := rosterEntry(v, r.Match); err != nil {
 			return fmt.Errorf("line %d: %q %w", line, v, err)
 		}
@@ -146,6 +150,11 @@ func parseRoster(data []byte, r Roster) (rosterList, error) {
 				return list, err
 			}
 		}
+	}
+	// An empty list is most often a failed or truncated export; checking
+	// against it would report complete for no reason.
+	if len(list.entries) == 0 {
+		return list, fmt.Errorf("lists no items")
 	}
 	sort.Strings(list.entries)
 	return list, nil

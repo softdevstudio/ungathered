@@ -23,10 +23,10 @@ jobs:
 | `manifest` | | The manifest, relative to the workspace. A relative roster file is read from the manifest's folder. |
 | `root` | `.` | Folder to scan, relative to the workspace. |
 | `args` | | More options as one string, such as `--max-content-bytes 4194304`. |
-| `out` | a folder in the runner's temp directory | Where `ungathered.json` and `ungathered.html` go. It must be outside `root`. |
+| `out` | a folder in the runner's temp directory | Where `ungathered.json` and `ungathered.html` go. It must be outside `root`. A missing folder is made only after the scan, once it is known to be outside `root`; existing report files there are never replaced. |
 | `upload` | `true` | Upload the two reports as an artifact. |
 | `artifact-name` | `ungathered-report` | Artifact name. Using the action twice in one job needs a different name for each. |
-| `fail` | `true` | Fail the step when files are missing. `false` reports only. |
+| `fail` | `true` | Fail the step when files are missing. `false` reports only; any value other than `true` or `false` is refused. |
 | `version` | | `latest` or a release tag such as `v0.2.0`. Empty runs the release the action is pinned to (`@v0.2.0` runs 0.2.0); a branch or commit pin runs the latest. |
 | `ungathered-path` | | Use this binary instead of downloading one, for testing the action. |
 

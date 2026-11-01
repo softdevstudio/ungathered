@@ -25,13 +25,13 @@ func Render(w io.Writer, r Report, format string) error {
 		}
 		for _, g := range r.Collections {
 			if g.Roster != nil {
-				if _, err := fmt.Fprintf(w, "Roster %s for %s: %d entries, %d found, %d missing, %d unlisted\n", g.Roster.File, g.Name, g.Roster.Entries, g.Roster.Found, g.Roster.Missing, g.Roster.Unlisted); err != nil {
+				if _, err := fmt.Fprintf(w, "Roster %s for %s: %d entries, %d found, %d missing, %d unlisted\n", plain(g.Roster.File), plain(g.Name), g.Roster.Entries, g.Roster.Found, g.Roster.Missing, g.Roster.Unlisted); err != nil {
 					return err
 				}
 			}
 		}
 		for _, i := range r.Issues {
-			if _, err := fmt.Fprintf(w, "[%s] %s %s: %s\n", i.Status, i.Collection, i.Path, i.Detail); err != nil {
+			if _, err := fmt.Fprintf(w, "[%s] %s %s: %s\n", i.Status, plain(i.Collection), plain(i.Path), plain(i.Detail)); err != nil {
 				return err
 			}
 		}
@@ -39,7 +39,7 @@ func Render(w io.Writer, r Report, format string) error {
 			for _, item := range g.Items {
 				for _, c := range item.Checks {
 					if c.Status != "present" {
-						if _, err := fmt.Fprintf(w, "[%s] %s / %s / %s: %s (%s)\n", c.Status, g.Name, item.Path, c.Name, c.Path, c.Detail); err != nil {
+						if _, err := fmt.Fprintf(w, "[%s] %s / %s / %s: %s (%s)\n", c.Status, plain(g.Name), plain(item.Path), plain(c.Name), plain(c.Path), plain(c.Detail)); err != nil {
 							return err
 						}
 					}
@@ -56,6 +56,20 @@ func Render(w io.Writer, r Report, format string) error {
 	default:
 		return fmt.Errorf("format must be one of %s", strings.Join(Formats, ", "))
 	}
+}
+
+// plain writes control characters as \xNN, so a file name can't start a new
+// line in a log, where a CI runner might read it as a command.
+func plain(s string) string {
+	var b strings.Builder
+	for _, ch := range s {
+		if ch < 0x20 || ch == 0x7f {
+			fmt.Fprintf(&b, "\\x%02x", ch)
+		} else {
+			b.WriteRune(ch)
+		}
+	}
+	return b.String()
 }
 
 // problem is one failed check or report issue, flattened for annotations and
@@ -148,8 +162,18 @@ func renderGitHub(w io.Writer, r Report, workspace string) error {
 // limits a job summary to 1 MiB.
 const MaxSummaryRows = 200
 
+// MaxSummaryCell and MaxSummaryBytes keep the summary under GitHub's limit
+// whatever the paths look like.
+const (
+	MaxSummaryCell  = 300
+	MaxSummaryBytes = 512 << 10
+)
+
 func mdCell(s string) string {
 	s = strings.NewReplacer("\r", " ", "\n", " ").Replace(s)
+	if r := []rune(s); len(r) > MaxSummaryCell {
+		s = string(r[:MaxSummaryCell]) + "..."
+	}
 	var b strings.Builder
 	for _, ch := range s {
 		if strings.ContainsRune("\\`*_[]<>|#&!", ch) {
@@ -176,8 +200,8 @@ func renderMarkdown(w io.Writer, r Report) error {
 	} else {
 		b.WriteString("| Problem | Collection | Item | Requirement | Path | Detail |\n|---|---|---|---|---|---|\n")
 		for i, p := range ps {
-			if i == MaxSummaryRows {
-				fmt.Fprintf(&b, "\n%d more problems are in the full report.\n", len(ps)-MaxSummaryRows)
+			if i == MaxSummaryRows || b.Len() > MaxSummaryBytes {
+				fmt.Fprintf(&b, "\n%d more problems are in the full report.\n", len(ps)-i)
 				break
 			}
 			fmt.Fprintf(&b, "| %s | %s | %s | %s | %s | %s |\n", p.status, mdCell(p.collection), mdCell(p.item), mdCell(p.requirement), mdCell(p.path), mdCell(p.detail))

@@ -93,3 +93,66 @@ func TestReportFilesSummaryAndRoster(t *testing.T) {
 		}
 	}
 }
+
+func TestReportFoldersMadeAfterCheck(t *testing.T) {
+	dir := t.TempDir()
+	pack := filepath.Join(dir, "pack")
+	_ = os.MkdirAll(filepath.Join(pack, "a"), 0700)
+	_ = os.WriteFile(filepath.Join(pack, "a", "x"), []byte("x"), 0600)
+	schema := filepath.Join(dir, "m.json")
+	_ = os.WriteFile(schema, []byte(`{"version":1,"collections":[{"name":"d","items":"*","kind":"directory","require":[{"name":"x","path":"{item}/x"}]}]}`), 0600)
+	var o, e bytes.Buffer
+	// Missing folders outside the root are made.
+	if got := run([]string{"--manifest", schema, "--root", pack, "--json", filepath.Join(dir, "out", "deep", "r.json")}, &o, &e); got != 0 {
+		t.Fatal(got, e.String())
+	}
+	if _, err := os.Stat(filepath.Join(dir, "out", "deep", "r.json")); err != nil {
+		t.Fatal(err)
+	}
+	// A missing folder inside the root is refused and never made.
+	if got := run([]string{"--manifest", schema, "--root", pack, "--json", filepath.Join(pack, "report", "r.json")}, &o, &e); got != 2 {
+		t.Fatal("accepted a report inside the root")
+	}
+	if _, err := os.Stat(filepath.Join(pack, "report")); err == nil {
+		t.Fatal("made a folder inside the root")
+	}
+	// A failed later target takes away the folders an earlier one made.
+	if got := run([]string{"--manifest", schema, "--root", pack, "--json", filepath.Join(dir, "new1", "r.json"), "--summary", filepath.Join(dir, "absent.md")}, &o, &e); got != 2 {
+		t.Fatal(got)
+	}
+	_ = os.WriteFile(filepath.Join(dir, "taken.html"), nil, 0600)
+	if got := run([]string{"--manifest", schema, "--root", pack, "--json", filepath.Join(dir, "new2", "a", "r.json"), "--html", filepath.Join(dir, "taken.html")}, &o, &e); got != 2 {
+		t.Fatal(got)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "new2")); err == nil {
+		t.Fatal("left folders after a failed write")
+	}
+	// A symlinked folder pointing into the root is still refused.
+	if err := os.Symlink(pack, filepath.Join(dir, "link")); err == nil {
+		if got := run([]string{"--manifest", schema, "--root", pack, "--json", filepath.Join(dir, "link", "sub", "r.json")}, &o, &e); got != 2 {
+			t.Fatal("followed a symlink into the root")
+		}
+		if _, err := os.Stat(filepath.Join(pack, "sub")); err == nil {
+			t.Fatal("made a folder inside the root through a symlink")
+		}
+	}
+}
+
+func TestReportRefusedThroughOtherCapitalisation(t *testing.T) {
+	dir := t.TempDir()
+	pack := filepath.Join(dir, "pack")
+	_ = os.MkdirAll(filepath.Join(pack, "a"), 0700)
+	_ = os.WriteFile(filepath.Join(pack, "a", "x"), []byte("x"), 0600)
+	if _, err := os.Stat(filepath.Join(dir, "PACK")); err != nil {
+		t.Skip("case-sensitive file system")
+	}
+	schema := filepath.Join(dir, "m.json")
+	_ = os.WriteFile(schema, []byte(`{"version":1,"collections":[{"name":"d","items":"*","kind":"directory","require":[{"name":"x","path":"{item}/x"}]}]}`), 0600)
+	var o, e bytes.Buffer
+	if got := run([]string{"--manifest", schema, "--root", pack, "--json", filepath.Join(dir, "PACK", "r.json")}, &o, &e); got != 2 {
+		t.Fatal("accepted a report inside the root under another capitalisation")
+	}
+	if _, err := os.Stat(filepath.Join(pack, "r.json")); err == nil {
+		t.Fatal("wrote inside the root")
+	}
+}

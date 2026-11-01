@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -95,14 +96,23 @@ func run(args []string, stdout, stderr io.Writer) int {
 		seen[dest] = true
 		targets = append(targets, target{dest, t.format, t.appendTo})
 	}
+	// created holds files and folders this run made, newest last, so a
+	// failure can take them away again.
 	var created []string
 	undo := func(err error) int {
-		for _, p := range created {
-			_ = os.Remove(p)
+		for i := len(created) - 1; i >= 0; i-- {
+			_ = os.Remove(created[i])
 		}
 		return fail(err)
 	}
 	for _, t := range targets {
+		if !t.appendTo {
+			// Missing report folders are made only now, after the scan and
+			// after the target was checked to be outside the root.
+			if e := mkdirs(filepath.Dir(t.path), &created); e != nil {
+				return undo(e)
+			}
+		}
 		flags := os.O_CREATE | os.O_EXCL | os.O_WRONLY
 		if t.appendTo {
 			flags = os.O_APPEND | os.O_WRONLY
@@ -140,9 +150,33 @@ func run(args []string, stdout, stderr io.Writer) int {
 	return 0
 }
 
+// mkdirs creates dir and any missing parents, recording each folder it made.
+func mkdirs(dir string, created *[]string) error {
+	var missing []string
+	for d := dir; ; d = filepath.Dir(d) {
+		if _, err := os.Lstat(d); err == nil {
+			break
+		} else if !os.IsNotExist(err) {
+			return err
+		}
+		missing = append(missing, d)
+		if filepath.Dir(d) == d {
+			break
+		}
+	}
+	for i := len(missing) - 1; i >= 0; i-- {
+		if err := os.Mkdir(missing[i], 0755); err != nil {
+			return err
+		}
+		*created = append(*created, missing[i])
+	}
+	return nil
+}
+
 // outsideRoot resolves a report target and refuses one inside the scanned
-// root, including through a symlinked parent. A new file's parent must exist;
-// an appended file must exist itself.
+// root, including through a symlinked folder. For a new file, the nearest
+// existing folder above it is resolved and the missing ones are appended,
+// since they can't be symlinks yet. An appended file must exist itself.
 func outsideRoot(p, root string, existing bool) (string, error) {
 	dest, err := filepath.Abs(p)
 	if err != nil {
@@ -160,12 +194,34 @@ func outsideRoot(p, root string, existing bool) (string, error) {
 			return "", fmt.Errorf("%s is not a regular file", p)
 		}
 	} else {
-		parent, err := filepath.EvalSymlinks(filepath.Dir(dest))
+		var rest []string
+		dir := filepath.Dir(dest)
+		for {
+			if _, err := os.Lstat(dir); err == nil {
+				break
+			} else if !os.IsNotExist(err) {
+				return "", err
+			}
+			if filepath.Dir(dir) == dir {
+				return "", fmt.Errorf("no existing folder above %s", p)
+			}
+			rest = append([]string{filepath.Base(dir)}, rest...)
+			dir = filepath.Dir(dir)
+		}
+		parent, err := filepath.EvalSymlinks(dir)
 		if err != nil {
 			return "", err
 		}
-		dest = filepath.Join(parent, filepath.Base(dest))
+		info, err := os.Stat(parent)
+		if err != nil {
+			return "", err
+		}
+		if !info.IsDir() {
+			return "", fmt.Errorf("%s is not a folder", dir)
+		}
+		dest = filepath.Join(append(append([]string{parent}, rest...), filepath.Base(dest))...)
 	}
+	inside := errors.New("report files must be outside the collection root")
 	rel, err := filepath.Rel(root, dest)
 	if err != nil {
 		if !strings.EqualFold(filepath.VolumeName(root), filepath.VolumeName(dest)) {
@@ -174,7 +230,22 @@ func outsideRoot(p, root string, existing bool) (string, error) {
 		return "", err
 	}
 	if rel == "." || rel != ".." && !strings.HasPrefix(rel, ".."+string(os.PathSeparator)) {
-		return "", fmt.Errorf("report files must be outside the collection root")
+		return "", inside
+	}
+	// Names compare byte for byte above, but macOS and Windows folders are
+	// usually case-insensitive: /Users/x/Pack is /Users/x/pack. Compare the
+	// existing folders above the target with the root as files too.
+	rootInfo, err := os.Stat(root)
+	if err != nil {
+		return "", err
+	}
+	for d := dest; ; d = filepath.Dir(d) {
+		if info, err := os.Stat(d); err == nil && os.SameFile(info, rootInfo) {
+			return "", inside
+		}
+		if filepath.Dir(d) == d {
+			break
+		}
 	}
 	return dest, nil
 }

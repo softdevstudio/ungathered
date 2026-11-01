@@ -103,3 +103,34 @@ func TestTextAndHTMLShowRoster(t *testing.T) {
 		}
 	}
 }
+
+func TestTextFormatCannotStartALogCommand(t *testing.T) {
+	r := Report{ToolVersion: "t", Status: "incomplete", Issues: []Issue{{Collection: "c", Path: "x\n::add-mask::secret\r|y.md", Status: "missing_item", Detail: "d\x1b[31m"}}}
+	var b bytes.Buffer
+	if e := Render(&b, r, "text"); e != nil {
+		t.Fatal(e)
+	}
+	for _, line := range strings.Split(b.String(), "\n") {
+		if strings.HasPrefix(line, "::") || strings.ContainsAny(line, "\r\x1b") {
+			t.Fatalf("%q", b.String())
+		}
+	}
+	if !strings.Contains(b.String(), `x\x0a::add-mask::secret\x0d|y.md`) {
+		t.Fatal(b.String())
+	}
+}
+
+func TestMarkdownStaysSmall(t *testing.T) {
+	r := Report{ToolVersion: "t", Status: "incomplete"}
+	long := strings.Repeat("p", 20000)
+	for i := 0; i < MaxSummaryRows; i++ {
+		r.Issues = append(r.Issues, Issue{Collection: long, Path: long, Status: "missing_item", Detail: long})
+	}
+	var b bytes.Buffer
+	_ = Render(&b, r, "markdown")
+	// Cells are cut at MaxSummaryCell, so 200 rows of huge paths stay far
+	// below GitHub's 1 MiB summary limit.
+	if b.Len() > 1<<20 || strings.Contains(b.String(), strings.Repeat("p", MaxSummaryCell+1)) {
+		t.Fatal(b.Len())
+	}
+}

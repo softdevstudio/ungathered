@@ -126,3 +126,24 @@ func TestRosterLimits(t *testing.T) {
 		t.Fatal("oversized file read")
 	}
 }
+
+func TestEmptyRosterAndLongEntry(t *testing.T) {
+	for name, tt := range map[string]struct{ file, data string }{
+		"zero bytes":  {"r.txt", ""},
+		"comments":    {"r.txt", "# nothing yet\n\n"},
+		"bom only":    {"r.txt", "\xef\xbb\xbf"},
+		"header only": {"r.csv", "slug\n"},
+		"long entry":  {"r.txt", strings.Repeat("a", MaxRosterEntryBytes+1) + "\n"},
+	} {
+		r := Roster{File: tt.file, Match: "name"}
+		if strings.HasSuffix(tt.file, ".csv") {
+			r.Column = "slug"
+		}
+		if _, e := parseRoster([]byte(tt.data), r); e == nil {
+			t.Errorf("%s: accepted", name)
+		}
+	}
+	if _, e := parseRoster([]byte(strings.Repeat("a", MaxRosterEntryBytes)+"\n"), Roster{File: "r.txt", Match: "name"}); e != nil {
+		t.Fatal(e)
+	}
+}
