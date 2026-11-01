@@ -1,5 +1,35 @@
 # UnGathered
 
+## Where the next session starts
+
+Read "In progress" below and continue from the first step not marked done. The work queue for all SoftDevStudio.com projects is softdev-plan.md in photozeitgeist/jollyroger.biz (item 37 is this project).
+
+## In progress: UnGathered 0.2 (softdev-plan item 37, Phase A, approved by YK 2026-11-01)
+
+What and why: three features that close the biggest gaps the 0.1 README admits. Nested asset trees need one collection per depth today; a whole item that was never created can't be seen; content and docs repos have no ready CI gate.
+
+Design decisions:
+- `**` is allowed only as a whole path segment in `items` and in a new `exclude` list. It matches zero or more segments. `a**b` and `**.md` stay invalid.
+- `exclude` (optional, up to 100 globs) removes anchors after matching. Excludes never remove companions; they only remove anchors. A symlink is safe to skip only when it sits under an exclude whose last segment is `**` (then nothing below it can be an anchor); otherwise it stays an error, as in 0.1.
+- `roster` (optional per collection): `{"file": ..., "match": "name|stem|item", "column": ..., "unlisted": "ignore|gap"}`. The file path is relative to the manifest file (absolute allowed), never to the scanned root. `.csv` files need `column` and read that header's column; other files are one entry per line, blank lines and `#` comments ignored. Entries are trimmed, exact and case-sensitive. A roster entry no selected item matches is a `missing_item` gap; with `unlisted: gap` an item absent from the roster is an `unlisted_item` gap. Duplicate or empty entries, a `/` in a name or stem entry, or an unreadable roster are invalid input (exit 2). Limits: 16 MiB and 100000 entries per roster. Reports gain a `roster` block per collection (file, sha256, entries, missing).
+- Report schema stays version 1: the new fields are additive.
+- Output formats `github` (annotations from fixed fields only) and `markdown` (step summary) for the Action. A `--summary FILE` flag appends Markdown to an existing file, so one run can do both.
+- Action: composite `action.yml` per the PXTA ACTION.md pattern, tested by `.github/workflows/action-test.yml` on Linux, macOS and Windows with a binary built from the commit, plus a download job that runs after each release on the published binaries, pinned and latest.
+- Upkeep: `go.mod` and README minimum Go 1.26; workflows use the current stable Go; a Windows CI job; CLAUDE.md restructured with this section first.
+
+Steps (done / remaining):
+1. [ ] Upkeep: go.mod 1.26, workflows on stable Go, Windows CI job.
+2. [ ] `**` globs and `exclude`, with tests (nesting, zero-depth, excludes, symlinks under excluded and non-excluded trees, invalid patterns).
+3. [ ] Roster files, with tests (text and CSV, each match key, missing and unlisted items, duplicates, bad rows, size limits, BOM, CRLF).
+4. [ ] `--format github|markdown` and `--summary`, with tests.
+5. [ ] `action.yml`, ACTION.md, action-test workflow.
+6. [ ] README, docs/reports.md, examples (a nested-assets example with a roster), demo script assertions.
+7. [ ] Independent review agent, fixes, fresh test/results.
+8. [ ] Version 0.2.0 on main, release workflow, SHA256SUMS, run the downloaded binary, action-test download job.
+9. [ ] ungathered.com post and pages, softdevstudio.com note, softdev-plan.md status.
+
+Local note: this cloud session has Go 1.24 only (the Go download hosts are blocked), so local tests run on a scratch go.mod; GitHub CI on stable Go is the real check.
+
 ## Project facts
 
 UnGathered finds missing companions in local collections. Domain: ungathered.com. Code: softdevstudio/ungathered. Site: photozeitgeist/ungathered.com. Go, Apache 2.0.
