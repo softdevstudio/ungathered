@@ -23,7 +23,7 @@ Steps (done / remaining):
 3. [x] Roster files, with tests (text and CSV, each match key, missing and unlisted items, duplicates, bad rows, size limits, BOM, CRLF).
 4. [x] `--format github|markdown` and `--summary`, with tests.
 5. [x] `action.yml` and action-test workflow (local job on 3 OS; download job after each release, gated on the newest release being for that commit). Usage goes in docs/action.md, since this repo keeps user docs in docs/.
-6. [ ] README, docs/reports.md, examples (a nested-assets example with a roster), demo script assertions.
+6. [x] README, docs/reports.md, docs/action.md, examples/magazine.json with magazine-plan.csv, demo and release smoke assertions for globs, excludes and rosters.
 7. [ ] Independent review agent, fixes, fresh test/results.
 8. [ ] Version 0.2.0 on main, release workflow, SHA256SUMS, run the downloaded binary, action-test download job.
 9. [ ] ungathered.com post and pages, softdevstudio.com note, softdev-plan.md status.

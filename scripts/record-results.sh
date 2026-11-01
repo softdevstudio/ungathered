@@ -11,5 +11,5 @@ mkdir -p test/results/latest
 go vet ./... > test/results/latest/vet.txt 2>&1
 go test -race -count=1 -v ./... > test/results/latest/tests.txt 2>&1
 sh scripts/demo.sh > test/results/latest/demo.txt 2>&1
-cp demo-output/manufacturing.json demo-output/publishing.json demo-output/repaired.json test/results/latest/
+cp demo-output/manufacturing.json demo-output/publishing.json demo-output/magazine.json demo-output/magazine.md demo-output/repaired.json test/results/latest/
 printf 'All checks passed.\n'

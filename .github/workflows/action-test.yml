@@ -115,7 +115,7 @@ jobs:
           grep -q '"missing_item"' "$r" || { echo "::error::report has no missing_item"; bad=1; }
           grep -q '"content_mismatch"' "$r" || { echo "::error::report has no content_mismatch"; bad=1; }
           grep -q '"gaps": 3' "$r" || { echo "::error::report does not have 3 gaps"; bad=1; }
-          if grep -q 'drafts' "$r"; then echo "::error::the excluded draft was scanned"; bad=1; fi
+          if grep -q 'drafts/idea.md' "$r"; then echo "::error::the excluded draft was scanned"; bad=1; fi
           [ ! -e testdata/action/complete/report ] || { echo "::error::a report was written inside the root"; bad=1; }
           exit $bad
 

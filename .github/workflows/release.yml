@@ -122,6 +122,21 @@ jobs:
           printf 'drawing' > pack/products/alpha/drawing.txt
           ./ungathered --manifest manifest.json --root pack --format json > complete.json
           grep -q '"status": "complete"' complete.json
+          test -f examples/magazine.json
+          test -f examples/magazine-plan.csv
+          test -f docs/action.md
+          mkdir -p mag/issues/spring/images mag/issues/spring/drafts
+          printf 'Cafe.\nPhoto credit: Studio\n' > mag/issues/spring/cafe.md
+          printf 'img' > mag/issues/spring/images/cafe.jpg
+          printf 'draft' > mag/issues/spring/drafts/wip.md
+          if ./ungathered --manifest examples/magazine.json --root mag --format json > mag.json; then
+            echo 'Roster gaps should fail' >&2; exit 1
+          else
+            test "$?" -eq 1
+          fi
+          grep -q '"missing_item"' mag.json
+          grep -q '"found": 1' mag.json
+          if grep -q 'drafts/wip.md' mag.json; then echo 'Excluded draft was scanned' >&2; exit 1; fi
 
   publish:
     needs: [check, build, smoke]

@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "collections": [
+    {
+      "name": "Issue articles",
+      "items": "issues/**/*.md",
+      "kind": "file",
+      "exclude": ["issues/*/drafts/**", "**/README.md"],
+      "roster": {"file": "magazine-plan.csv", "column": "slug", "match": "stem", "unlisted": "gap"},
+      "require": [
+        {"name": "Lead image", "path": "{dir}/images/{stem}.jpg", "min_bytes": 1},
+        {"name": "Photo credit", "path": "{item}", "contains": "(?mi)^Photo credit:[ \\t]*\\S"}
+      ]
+    }
+  ]
+}
