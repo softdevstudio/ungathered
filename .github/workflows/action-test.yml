@@ -167,7 +167,7 @@ jobs:
       # The action as released, not whatever main holds now.
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ github.event.inputs.tag || github.event.workflow_run.head_sha || github.sha }}
       - name: Pick the version
         id: pick
         shell: bash

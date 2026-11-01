@@ -24,7 +24,7 @@ Steps (done / remaining):
 4. [x] `--format github|markdown` and `--summary`, with tests.
 5. [x] `action.yml` and action-test workflow (local job on 3 OS; download job after each release, gated on the newest release being for that commit). Usage goes in docs/action.md, since this repo keeps user docs in docs/.
 6. [x] README, docs/reports.md, docs/action.md, examples/magazine.json with magazine-plan.csv, demo and release smoke assertions for globs, excludes and rosters.
-7. [ ] Independent review agent, fixes, fresh test/results.
+7. [x] Independent review agent (two rounds; round 2 found no problems, one nit fixed: the hand-started download job checks out the pinned tag), fixes, fresh test/results (recorded locally on Go 1.24 with the scratch go.mod; CI runs the same suite on current stable Go).
 8. [ ] Version 0.2.0 on main, release workflow, SHA256SUMS, run the downloaded binary, action-test download job.
 9. [ ] ungathered.com post and pages, softdevstudio.com note, softdev-plan.md status.
 

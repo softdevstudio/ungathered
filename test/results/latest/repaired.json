@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "tool_version": "0.1.0",
-  "root": "/workspace/scratch/a1e6bf690e2f/ungathered/demo-output/pack",
+  "tool_version": "0.2.0",
+  "root": "/home/claude/ungathered/demo-output/pack",
   "manifest_sha256": "dcf3efb18f340a2bda6005170d53f8a8dfb228a87405c9ddfa7bacff0ea33b71",
   "status": "complete",
   "totals": {
@@ -16,6 +16,7 @@
     {
       "name": "Manufacturing document packs",
       "pattern": "products/*",
+      "kind": "directory",
       "items": [
         {
           "path": "products/alpha",

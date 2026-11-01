@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "tool_version": "0.1.0",
-  "root": "/workspace/scratch/a1e6bf690e2f/ungathered/demo-output/publishing",
+  "tool_version": "0.2.0",
+  "root": "/home/claude/ungathered/demo-output/publishing",
   "manifest_sha256": "544af8855a71dbdd85907c109d31d71f6c74596a138a92e23eea4446818eb8ae",
   "status": "incomplete",
   "totals": {
@@ -16,6 +16,7 @@
     {
       "name": "Article assets",
       "pattern": "articles/*.md",
+      "kind": "file",
       "items": [
         {
           "path": "articles/cafe.md",

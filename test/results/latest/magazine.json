@@ -1,0 +1,125 @@
+{
+  "version": 1,
+  "tool_version": "0.2.0",
+  "root": "/home/claude/ungathered/demo-output/magazine",
+  "manifest_sha256": "ec1a5810b5537ecda647540264ff0c3263c631d195187cdf8c3f8ce3bf57d1a8",
+  "status": "incomplete",
+  "totals": {
+    "items": 4,
+    "complete_items": 2,
+    "checks": 8,
+    "present": 6,
+    "gaps": 4,
+    "errors": 0
+  },
+  "collections": [
+    {
+      "name": "Issue articles",
+      "pattern": "issues/**/*.md",
+      "kind": "file",
+      "exclude": [
+        "issues/*/drafts/**",
+        "**/README.md"
+      ],
+      "roster": {
+        "file": "magazine-plan.csv",
+        "sha256": "38bc1597ed99bc2b55e1b78fe6722e394e8c1a032d62b1d534839ee0f80a0c47",
+        "match": "stem",
+        "entries": 4,
+        "found": 3,
+        "missing": 1,
+        "unlisted": 1
+      },
+      "items": [
+        {
+          "path": "issues/spring/cafe.md",
+          "complete": true,
+          "checks": [
+            {
+              "name": "Lead image",
+              "path": "issues/spring/images/cafe.jpg",
+              "status": "present",
+              "bytes": 18
+            },
+            {
+              "name": "Photo credit",
+              "path": "issues/spring/cafe.md",
+              "status": "present",
+              "bytes": 35
+            }
+          ]
+        },
+        {
+          "path": "issues/spring/features/harbor.md",
+          "complete": false,
+          "checks": [
+            {
+              "name": "Lead image",
+              "path": "issues/spring/features/images/harbor.jpg",
+              "status": "missing",
+              "bytes": 0,
+              "detail": "required path does not exist"
+            },
+            {
+              "name": "Photo credit",
+              "path": "issues/spring/features/harbor.md",
+              "status": "present",
+              "bytes": 37
+            }
+          ]
+        },
+        {
+          "path": "issues/summer/bonus.md",
+          "complete": true,
+          "checks": [
+            {
+              "name": "Lead image",
+              "path": "issues/summer/images/bonus.jpg",
+              "status": "present",
+              "bytes": 18
+            },
+            {
+              "name": "Photo credit",
+              "path": "issues/summer/bonus.md",
+              "status": "present",
+              "bytes": 34
+            }
+          ]
+        },
+        {
+          "path": "issues/summer/market.md",
+          "complete": false,
+          "checks": [
+            {
+              "name": "Lead image",
+              "path": "issues/summer/images/market.jpg",
+              "status": "present",
+              "bytes": 18
+            },
+            {
+              "name": "Photo credit",
+              "path": "issues/summer/market.md",
+              "status": "content_mismatch",
+              "bytes": 31,
+              "detail": "required content pattern did not match"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "issues": [
+    {
+      "collection": "Issue articles",
+      "path": "ferry",
+      "status": "missing_item",
+      "detail": "listed in roster magazine-plan.csv; no selected item matches its stem"
+    },
+    {
+      "collection": "Issue articles",
+      "path": "issues/summer/bonus.md",
+      "status": "unlisted_item",
+      "detail": "selected item is not in roster magazine-plan.csv"
+    }
+  ]
+}
