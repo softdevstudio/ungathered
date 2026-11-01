@@ -2,9 +2,9 @@
 
 ## Where the next session starts
 
-Read "In progress" below and continue from the first step not marked done. The work queue for all SoftDevStudio.com projects is softdev-plan.md in photozeitgeist/jollyroger.biz (item 37 is this project).
+UnGathered 0.2.0 is released and every step below is done. Nothing is in progress. The candidate next phase (opt-in format checks for PDF header and page count, image dimensions and CSV header rows) is not approved; ask YK before starting it. The work queue is softdev-plan.md in photozeitgeist/jollyroger.biz (item 37). The work queue for all SoftDevStudio.com projects is softdev-plan.md in photozeitgeist/jollyroger.biz (item 37 is this project).
 
-## In progress: UnGathered 0.2 (softdev-plan item 37, Phase A, approved by YK 2026-11-01)
+## Done: UnGathered 0.2 (softdev-plan item 37, Phase A, approved by YK 2026-11-01)
 
 What and why: three features that close the biggest gaps the 0.1 README admits. Nested asset trees need one collection per depth today; a whole item that was never created can't be seen; content and docs repos have no ready CI gate.
 
@@ -26,7 +26,7 @@ Steps (done / remaining):
 6. [x] README, docs/reports.md, docs/action.md, examples/magazine.json with magazine-plan.csv, demo and release smoke assertions for globs, excludes and rosters.
 7. [x] Independent review agent (two rounds; round 2 found no problems, one nit fixed: the hand-started download job checks out the pinned tag), fixes, fresh test/results (recorded locally on Go 1.24 with the scratch go.mod; CI runs the same suite on current stable Go).
 8. [x] UnGathered 0.2.0 released by the workflow (commit fe27539). All five archives match SHA256SUMS at the tag and latest; the downloaded Linux binary reproduced the magazine demo with unchanged inputs; the action-test download job passed on all three OS, pinned and latest. Evidence in test/results/ungathered-0.2.0-release.
-9. [ ] ungathered.com post and pages, softdevstudio.com note, softdev-plan.md status.
+9. [x] ungathered.com release post with its SVG, Quick Start roster example, Reference (site commit 0040bb1, Cloudflare Pages deploy succeeded); softdevstudio.com note and listing (commit 6732725, deploy succeeded); softdev-plan.md item 37 marked done.
 
 Review round 1 (2026-11-01, independent agent): blocker, the Action ran `rm -f` and `mkdir -p` in a user `out` before the binary's root check, so it could delete a manifest named ungathered.json or leave a folder in the collection (the first action-test runs failed on exactly that). Fixed: the Action no longer touches `out`; the CLI makes missing report folders after the scan, only once they are outside the root, and removes them again if a later write fails. Should-fix, all fixed with tests: an empty roster (0 bytes, comments only, BOM only, header-only CSV) passed as complete, now invalid input; `fail` other than exactly `false` now fails, and values other than true/false are refused; the text format printed file names raw, so a name with a newline could start a runner command, now control characters are written as \\xNN; the inside-root check compared names byte for byte, now also compares the existing folders above the target with the root as files (case-insensitive macOS). Nits fixed: reports.md wording, the download job checks out the release commit, Markdown cells capped at 300 characters, roster entries capped at 4096 bytes, README note on Unicode normal forms. Checked sound by the reviewer: glob matcher edge cases, symlink handling, concurrent scans, CSV edge cases, install step.
 
